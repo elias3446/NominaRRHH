@@ -18,12 +18,12 @@ async def test_user_creation_broadcast():
     connected, subprotocol = await communicator.connect()
     assert connected
 
-    # Paso 1: Creamos un usuario de prueba (esto debe disparar la señal signals.py)
-    # Usamos sync_to_async para interactuar con la DB en un test asíncrono
-    username = "test_user_convergence"
+    # Paso 1: Creamos un usuario de prueba con nombre único para evitar duplicados
+    import uuid
+    username = f"test_user_{uuid.uuid4().hex[:8]}"
     await sync_to_async(User.objects.create_user)(
         username=username, 
-        email="test@example.com", 
+        email=f"{username}@example.com", 
         password="password123"
     )
 
