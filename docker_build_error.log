@@ -1,0 +1,74 @@
+time="2026-03-27T18:34:23-05:00" level=warning msg="The \"ifc\" variable is not set. Defaulting to a blank string."
+time="2026-03-27T18:34:23-05:00" level=warning msg="The \"ifc\" variable is not set. Defaulting to a blank string."
+time="2026-03-27T18:34:23-05:00" level=warning msg="The \"ifc\" variable is not set. Defaulting to a blank string."
+time="2026-03-27T18:34:23-05:00" level=warning msg="The \"ifc\" variable is not set. Defaulting to a blank string."
+time="2026-03-27T18:34:23-05:00" level=warning msg="C:\\Users\\elias\\OneDrive\\Escritorio\\NominaRRHH\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Image nominarrhh-db Building 
+ Image nominarrhh-backend Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.10kB 0.1s done
+#1 DONE 0.1s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 770B 0.1s done
+#2 DONE 0.1s
+
+#3 [internal] load metadata for docker.io/library/python:3.11-slim
+#3 DONE 0.4s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B 0.0s done
+#4 DONE 0.1s
+
+#5 [internal] load build context
+#5 transferring context: 4.03kB 0.0s done
+#5 DONE 0.1s
+
+#6 [1/5] FROM docker.io/library/python:3.11-slim@sha256:9358444059ed78e2975ada2c189f1c1a3144a5dab6f35bff8c981afb38946634
+#6 resolve docker.io/library/python:3.11-slim@sha256:9358444059ed78e2975ada2c189f1c1a3144a5dab6f35bff8c981afb38946634
+#6 resolve docker.io/library/python:3.11-slim@sha256:9358444059ed78e2975ada2c189f1c1a3144a5dab6f35bff8c981afb38946634 0.1s done
+#6 DONE 0.1s
+
+#7 [2/5] WORKDIR /app
+#7 CACHED
+
+#8 [3/5] COPY requirements.txt /app/
+#8 DONE 0.1s
+
+#9 [4/5] RUN pip install --no-cache-dir -r requirements.txt
+#9 5.662 ERROR: Invalid requirement: '<<<<<<< Updated upstream' (from line 5 of requirements.txt)
+#9 6.177 
+#9 6.177 [notice] A new release of pip is available: 24.0 -> 26.0.1
+#9 6.177 [notice] To update, run: pip install --upgrade pip
+#9 ERROR: process "/bin/sh -c pip install --no-cache-dir -r requirements.txt" did not complete successfully: exit code: 1
+------
+ > [4/5] RUN pip install --no-cache-dir -r requirements.txt:
+5.662 ERROR: Invalid requirement: '<<<<<<< Updated upstream' (from line 5 of requirements.txt)
+6.177 
+6.177 [notice] A new release of pip is available: 24.0 -> 26.0.1
+6.177 [notice] To update, run: pip install --upgrade pip
+------
+WARNING: The "ifc" variable is not set. Defaulting to a blank string.
+
+Dockerfile:14
+
+--------------------
+
+  12 |     # Copiamos e instalamos dependencias rápidamente
+
+  13 |     COPY requirements.txt /app/
+
+  14 | >>> RUN pip install --no-cache-dir -r requirements.txt
+
+  15 |     
+
+  16 |     # Copiamos todo nuestro código fuente
+
+--------------------
+
+failed to solve: process "/bin/sh -c pip install --no-cache-dir -r requirements.txt" did not complete successfully: exit code: 1
+
+
+
+View build details: docker-desktop://dashboard/build/default/default/0yw5l4jyu19k9wsumnwb0y5vm
+

@@ -39,15 +39,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-<<<<<<< Updated upstream
-=======
     'channels',
     'rrhh',
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
->>>>>>> Stashed changes
 ]
 
 MIDDLEWARE = [
@@ -79,8 +76,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
-<<<<<<< Updated upstream
-=======
 ASGI_APPLICATION = 'core.asgi.application'
 
 # Configuración de Capas para WebSockets con Redis
@@ -99,24 +94,11 @@ else:
             },
         },
     }
->>>>>>> Stashed changes
 
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-<<<<<<< Updated upstream
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', 'nominarrhh_db'),
-        'USER': os.environ.get('POSTGRES_USER', 'admin'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'secretpassword'),
-        # IMPORTANTE: Aquí NO va 'localhost'. 
-        # Como estamos en Docker, el Host es el nombre del servicio de la BD ("db")
-        'HOST': os.environ.get('DB_HOST', 'db'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
-=======
 import sys
 if 'pytest' in sys.modules or os.environ.get('USE_SQLITE', 'False') == 'True':
     DATABASES = {
@@ -140,7 +122,6 @@ else:
                 'options': '-c search_path=auth,public'
             },
         }
->>>>>>> Stashed changes
     }
 
 # Configuración Maestra de Caché apuntando al nuevo servicio Redis
@@ -196,8 +177,6 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-<<<<<<< Updated upstream
-=======
 
 # Configuración Maestra: Usamos el sistema de usuarios Legacy de Supabase
 AUTH_USER_MODEL = 'rrhh.CustomUser'
@@ -257,4 +236,3 @@ CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000'
 
 # ESENCIAL: Permite que el navegador envíe Cookies (Tokens) en peticiones Cross-Origin
 CORS_ALLOW_CREDENTIALS = True
->>>>>>> Stashed changes

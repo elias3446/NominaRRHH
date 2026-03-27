@@ -6,5 +6,5 @@ FROM postgres:15
 # Copiamos la carpeta que creaste ('init') con sus respaldos hacia la carpeta 
 # oficial de autoinicialización de Postgres. Todo archivo .sql que esté allí 
 # correrá automáticamente, poblando la BD al encender el contenedor por primera vez.
-COPY ./init/ /docker-entrypoint-initdb.d/
+# COPY ./init/ /docker-entrypoint-initdb.d/
 # desde tu archivo .env gracias a docker-compose.yml.
