@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,12 +22,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-s8-btmb!jw-%t5=z*age7jd1!+m)0$1@kdb8zk*#4f3*$ifc-t'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-s8-btmb!jw-%t5=z*age7jd1!+m)0$1@kdb8zk*#4f3*$ifc-t')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
 
 # Application definition
@@ -38,9 +39,19 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+<<<<<<< Updated upstream
+=======
+    'channels',
+    'rrhh',
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+    'corsheaders',
+>>>>>>> Stashed changes
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -68,11 +79,33 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
+<<<<<<< Updated upstream
+=======
+ASGI_APPLICATION = 'core.asgi.application'
+
+# Configuración de Capas para WebSockets con Redis
+if 'pytest' in sys.modules:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                "hosts": [(os.environ.get('REDIS_HOST', 'redis'), int(os.environ.get('REDIS_PORT', '6379')))],
+            },
+        },
+    }
+>>>>>>> Stashed changes
 
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+<<<<<<< Updated upstream
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -83,8 +116,32 @@ DATABASES = {
         # Como estamos en Docker, el Host es el nombre del servicio de la BD ("db")
         'HOST': os.environ.get('DB_HOST', 'db'),
         'PORT': os.environ.get('DB_PORT', '5432'),
+=======
+import sys
+if 'pytest' in sys.modules or os.environ.get('USE_SQLITE', 'False') == 'True':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('POSTGRES_DB', 'nominarrhh_db'),
+            'USER': os.environ.get('POSTGRES_USER', 'admin'),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'secretpassword'),
+            # IMPORTANTE: Aquí NO va 'localhost'. 
+            # como estamos en Docker, el Host es el nombre del servicio de la BD ("db")
+            'HOST': os.environ.get('DB_HOST', 'db'),
+            'PORT': os.environ.get('DB_PORT', '5432'), 
+            'OPTIONS': {
+                'options': '-c search_path=auth,public'
+            },
+        }
+>>>>>>> Stashed changes
+    }
 
 # Configuración Maestra de Caché apuntando al nuevo servicio Redis
 CACHES = {
@@ -139,3 +196,65 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+<<<<<<< Updated upstream
+=======
+
+# Configuración Maestra: Usamos el sistema de usuarios Legacy de Supabase
+AUTH_USER_MODEL = 'rrhh.CustomUser'
+
+# --- Autenticación Estilo Supabase (SimpleJWT con Cookies) ---
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.getenv('JWT_ACCESS_TOKEN_MINUTES', '15'))),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.getenv('JWT_REFRESH_TOKEN_DAYS', '7'))),
+    'ROTATE_REFRESH_TOKENS': os.getenv('JWT_ROTATE_REFRESH_TOKENS', 'True') == 'True',
+    'BLACKLIST_AFTER_ROTATION': os.getenv('JWT_BLACKLIST_AFTER_ROTATION', 'True') == 'True',
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    
+    # Configuración de Cookies (Seguridad Máxima)
+    'AUTH_COOKIE': 'access_token',      # Nombre de la cookie para el token de acceso
+    'AUTH_COOKIE_REFRESH': 'refresh_token', # Nombre para el token de refresco
+    'AUTH_COOKIE_SECURE': not DEBUG,    # Solo se envía por HTTPS en producción
+    'AUTH_COOKIE_HTTP_ONLY': True,      # Protege contra XSS (JS no puede leer el token)
+    'AUTH_COOKIE_PATH': '/',            # Disponible en todo el sitio
+    'AUTH_COOKIE_SAMESITE': 'Lax',       # Protege contra CSRF (Cross-Site Request Forgery)
+    
+    # Validación de Integridad
+    'ISSUER': os.getenv('JWT_ISSUER', 'NominaRRHH-Backend'),
+    'AUDIENCE': os.getenv('JWT_AUDIENCE', 'NominaRRHH-Frontend'),
+}
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}
+
+# --- SEGURIDAD AVANZADA (HTTPS / HSTS) ---
+if not DEBUG:
+    # 1. Forzar HTTPS en todo el backend
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    
+    # 2. Cookies Seguras a nivel de Django (Session/CSRF)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    
+    # 3. Políticas de Navegador (HSTS)
+    SECURE_HSTS_SECONDS = 31536000 # 1 año
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # 4. Otros Filtros de seguridad
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# --- CONFIGURACIÓN CORS ---
+# Solo permite que tu frontend oficial consuma la API
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+
+# ESENCIAL: Permite que el navegador envíe Cookies (Tokens) en peticiones Cross-Origin
+CORS_ALLOW_CREDENTIALS = True
+>>>>>>> Stashed changes

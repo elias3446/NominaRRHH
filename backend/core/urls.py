@@ -16,7 +16,19 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from rrhh.views import (
+    CookieTokenObtainPairView, 
+    CookieTokenRefreshView,
+    CookieLogoutView,
+    UserRegistrationView
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
+    # Endpoints de Autenticación con Cookies Seguras
+    path('api/auth/register/', UserRegistrationView.as_view(), name='token_register'),
+    path('api/auth/login/', CookieTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/auth/refresh/', CookieTokenRefreshView.as_view(), name='token_refresh'),
+    path('api/auth/logout/', CookieLogoutView.as_view(), name='token_logout'),
 ]
