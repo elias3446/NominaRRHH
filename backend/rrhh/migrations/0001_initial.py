@@ -13,6 +13,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunSQL('CREATE SCHEMA IF NOT EXISTS auth;'),
         migrations.CreateModel(
             name='CustomUser',
             fields=[
