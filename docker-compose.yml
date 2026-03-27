@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # ------ SERVICIO FRONTEND ------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nominarrhh-frontend
+    # Aquí es donde le decimos a Docker que lea tu archivo .env
+    env_file:
+      - .env
+    ports:
+      - "${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    restart: always
+
+  # ------ SERVICIO BACKEND ------
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nominarrhh-backend
+    # Aquí es donde le decimos a Docker que lea tu archivo .env
+    env_file:
+      - .env
+    ports:
+      - "${BACKEND_PORT:-8000}:${BACKEND_PORT:-8000}"
+    volumes:
+      - ./backend:/app
+    restart: always
+    depends_on:
+      - db # El backend espera a que la BD esté lista
+      - redis # El backend también espera a Redis
+
+  # ------ SERVICIO BASE DE DATOS ------
+  db:
+    build:
+      context: ./dbNominaRRHH
+      dockerfile: Dockerfile
+    container_name: nominarrhh-db
+    # Aquí es donde le decimos a Docker que lea tu archivo .env
+    env_file:
+      - .env
+    # Esto asegura que Postgres arranque incluso si hay otros archivos (como el Dockerfile) en la carpeta
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      # Guardamos los datos directamente en tu carpeta dbNominaRRHH
+      - ./dbNominaRRHH:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432" # Mapea tu puerto dinámico al puerto 5432 interno del contenedor
+    restart: always
+
+  # ------ SERVICIO DE CACHÉ (REDIS) ------
+  redis:
+    image: redis:7-alpine
+    container_name: nominarrhh-redis
+    env_file:
+      - .env
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    restart: always

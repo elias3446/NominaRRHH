@@ -1,0 +1,19 @@
+# Variables Privadas Sensibles (¡NUNCA SUBIR A GITHUB!)
+.env
+
+# Archivos de Base de Datos y Backups Pesados
+dbNominaRRHH/pgdata/
+dbNominaRRHH/data/
+dbNominaRRHH/init/*.sql
+*.sql
+*.dump
+
+# Pycache del Backend
+backend/__pycache__/
+backend/*/*.pyc
+backend/*.sqlite3
+
+# Node Modules del Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
