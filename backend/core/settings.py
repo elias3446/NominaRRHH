@@ -94,9 +94,9 @@ DATABASES = {
         'USER': os.environ.get('POSTGRES_USER', 'admin'),
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'secretpassword'),
         # IMPORTANTE: Aquí NO va 'localhost'. 
-        # Como estamos en Docker, el Host es el nombre del servicio de la BD ("db")
+        # como estamos en Docker, el Host es el nombre del servicio de la BD ("db")
         'HOST': os.environ.get('DB_HOST', 'db'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+        'PORT': '5432', # Internamente en Docker siempre es 5432
     }
 }
 
