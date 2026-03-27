@@ -1,8 +1,11 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.auth.models import User
+from django.conf import settings
+from django.contrib.auth import get_user_model
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+
+User = get_user_model()
 
 @receiver(post_save, sender=User)
 def notify_new_user(sender, instance, created, **kwargs):

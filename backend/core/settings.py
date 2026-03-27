@@ -153,3 +153,6 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Configuración Maestra: Usamos el sistema de usuarios Legacy de Supabase
+AUTH_USER_MODEL = 'rrhh.CustomUser'

@@ -18,12 +18,11 @@ async def test_user_creation_broadcast():
     connected, subprotocol = await communicator.connect()
     assert connected
 
-    # Paso 1: Creamos un usuario de prueba con nombre único para evitar duplicados
+    # Paso 1: Creamos un usuario de prueba (usando email como identificador según la Opción A)
     import uuid
-    username = f"test_user_{uuid.uuid4().hex[:8]}"
+    email_test = f"test_{uuid.uuid4().hex[:8]}@example.com"
     await sync_to_async(User.objects.create_user)(
-        username=username, 
-        email=f"{username}@example.com", 
+        email=email_test, 
         password="password123"
     )
 
@@ -32,8 +31,8 @@ async def test_user_creation_broadcast():
 
     # Paso 3: Validamos Convergencia (Mensaje esperado vs Mensaje recibido)
     assert response['type'] == 'user.created'
-    assert username in response['message']
-    assert response['user']['username'] == username
+    assert email_test in response['message']
+    assert response['user']['email'] == email_test
 
     # Cerramos la conexión
     await communicator.disconnect()
