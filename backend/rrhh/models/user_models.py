@@ -38,9 +38,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = []
 
     class Meta:
-        # Aquí es donde ocurre la magia técnica de la Opción A:
-        # Le decimos a Django que su tabla de usuarios está en el esquema 'auth'
-        db_table = 'auth"."users'
+        # Probamos con la sintaxis simplificada para ver si el test arranca
+        db_table = 'auth.users'
         verbose_name = 'Usuario de Swissport (Auth)'
         verbose_name_plural = 'Usuarios de Swissport (Auth)'
 
