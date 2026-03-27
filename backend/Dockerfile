@@ -16,6 +16,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiamos todo nuestro código fuente
 COPY . /app/
 
-# Levantamos el servidor de Django capturando la variable BACKEND_PORT desde tu .env
-# (Docker evaluará el puerto y ejecutará exactamente en el que configuraste)
-CMD sh -c "python manage.py runserver 0.0.0.0:${BACKEND_PORT:-8000}"
+# Levantamos el servidor de Django (Daphne) capturando la variable BACKEND_PORT desde tu .env
+# Esto permite que el servidor maneje peticiones normales y WEBSOCKETS al mismo tiempo.
+CMD sh -c "daphne -b 0.0.0.0 -p ${BACKEND_PORT:-8000} core.asgi:application"
