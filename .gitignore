@@ -4,9 +4,6 @@
 # Archivos de Base de Datos y Backups Pesados
 dbNominaRRHH/pgdata/
 dbNominaRRHH/data/
-dbNominaRRHH/init/*.sql
-*.sql
-*.dump
 
 # Pycache del Backend
 backend/__pycache__/

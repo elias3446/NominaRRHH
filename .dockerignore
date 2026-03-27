@@ -1,0 +1,18 @@
+# Ignorar basura de versión y de caché en Docker
+.git
+.gitignore
+.dockerignore
+
+# Carpetas de datos de la base de datos (¡Para no copiarlas dentro del docker container!)
+dbNominaRRHH/pgdata/
+dbNominaRRHH/data/
+
+# Basura de Python
+backend/__pycache__/
+backend/*/*.pyc
+backend/*.sqlite3
+
+# Basura de Node
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
