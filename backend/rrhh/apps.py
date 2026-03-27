@@ -5,5 +5,5 @@ class RrhhConfig(AppConfig):
     name = 'rrhh'
 
     def ready(self):
-        # El corazón de las señales de Nómina ahora late aquí
+        # Ahora el ready importa el PAQUETE de señales ordenado
         import rrhh.signals
