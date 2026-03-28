@@ -39,6 +39,7 @@ class CustomUser(AbstractBaseUser):
     instance_id = models.UUIDField(null=True, blank=True)
     aud = models.CharField(max_length=255, default='authenticated')
     role = models.CharField(max_length=255, default='authenticated')
+    is_super_admin = models.BooleanField(default=False, db_column='is_super_admin')
 
     # PROPIEDADES VIRTUALES (Solo en Python, no en la DB)
     @property
@@ -68,5 +69,5 @@ class CustomUser(AbstractBaseUser):
         # En Postgres usamos el esquema 'auth' de Supabase
         # En SQLite (pruebas local) usamos una tabla plana 'users'
         db_table = 'users' if 'pytest' in sys.modules else 'auth"."users'
-        managed = False
+        managed = 'pytest' in sys.modules
         verbose_name = 'Usuario Purificado Swissport'

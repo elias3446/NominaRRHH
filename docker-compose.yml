@@ -7,7 +7,6 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: nominarrhh-frontend
-    # Aquí es donde le decimos a Docker que lea tu archivo .env
     env_file:
       - .env
     ports:
@@ -23,7 +22,6 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: nominarrhh-backend
-    # Aquí es donde le decimos a Docker que lea tu archivo .env
     env_file:
       - .env
     ports:
@@ -32,8 +30,10 @@ services:
       - ./backend:/app
     restart: always
     depends_on:
-      - db # El backend espera a que la BD esté lista
-      - redis # El backend también espera a Redis
+      db:
+        condition: service_healthy  # Espera hasta que Postgres esté listo de verdad
+      redis:
+        condition: service_started
 
   # ------ SERVICIO BASE DE DATOS ------
   db:
@@ -41,18 +41,22 @@ services:
       context: ./dbNominaRRHH
       dockerfile: Dockerfile
     container_name: nominarrhh-db
-    # Aquí es donde le decimos a Docker que lea tu archivo .env
     env_file:
       - .env
-    # Esto asegura que Postgres arranque incluso si hay otros archivos (como el Dockerfile) en la carpeta
+    command: postgres -p ${DB_PORT:-5432}
     environment:
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
-      # Guardamos los datos directamente en tu carpeta dbNominaRRHH
       - ./dbNominaRRHH:/var/lib/postgresql/data
     ports:
-      - "${DB_PORT:-5432}:5432" # Mapea tu puerto dinámico al puerto 5432 interno del contenedor
+      - "${DB_PORT:-5432}:${DB_PORT:-5432}"
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-nominarrhh_db} -p ${DB_PORT:-5432}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   # ------ SERVICIO DE CACHÉ (REDIS) ------
   redis:
@@ -62,4 +66,44 @@ services:
       - .env
     ports:
       - "${REDIS_PORT:-6379}:6379"
+    restart: always
+
+  # ------ WORKER CELERY (PROCESADOR ASÍNCRONO) ------
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nominarrhh-celery
+    command: celery -A core worker -l info
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      backend:
+        condition: service_started
+    restart: always
+
+  # ------ CELERY BEAT (PROGRAMADOR DE TAREAS) ------
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nominarrhh-celery-beat
+    command: celery -A core beat -l info
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      celery:
+        condition: service_started
     restart: always

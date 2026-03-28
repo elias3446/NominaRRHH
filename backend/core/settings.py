@@ -33,6 +33,7 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -207,7 +208,7 @@ SIMPLE_JWT = {
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rrhh.cookie_auth.CookieJWTAuthentication',  # Lee el token desde Cookie HttpOnly
     )
 }
 
@@ -236,3 +237,21 @@ CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000'
 
 # ESENCIAL: Permite que el navegador envíe Cookies (Tokens) en peticiones Cross-Origin
 CORS_ALLOW_CREDENTIALS = True
+
+# --- CONFIGURACIÓN CELERY (REDIS) ---
+CELERY_BROKER_URL = f"redis://{os.environ.get('REDIS_HOST', 'redis')}:{os.environ.get('REDIS_PORT', '6379')}/1"
+CELERY_RESULT_BACKEND = f"redis://{os.environ.get('REDIS_HOST', 'redis')}:{os.environ.get('REDIS_PORT', '6379')}/1"
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+
+from celery.schedules import crontab
+CELERY_BEAT_SCHEDULE = {
+    'limpiar-tokens-expirados-diario': {
+        'task': 'rrhh.tasks.limpiar_tokens_expirados',
+        # Ejecutar todos los días a las 3:00 AM
+        'schedule': crontab(hour=3, minute=0),
+    },
+}
+

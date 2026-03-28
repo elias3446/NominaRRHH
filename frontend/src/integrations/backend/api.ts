@@ -4,19 +4,19 @@
  */
 
 // Toma la URL dinámicamente que configuramos en el archivo .env principal
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = BASE_URL.endsWith('/api') ? BASE_URL : `${BASE_URL}/api`;
 
 export const api = {
   /**
-   * Petición para Obtener datos (Equivalente a supabase.from('...').select())
+   * Petición para Obtener datos
    */
   get: async <T>(endpoint: string): Promise<T> => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: "GET",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        // En un futuro, si usas permisos de usuarios en Django, aquí iría el Token:
-        // "Authorization": `Bearer ${localStorage.getItem('token')}`
       },
     });
 
@@ -28,14 +28,14 @@ export const api = {
   },
 
   /**
-   * Petición para Insertar datos (Equivalente a supabase.from('...').insert())
+   * Petición para Insertar datos
    */
   post: async <T>(endpoint: string, bodyData: any): Promise<T> => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        // "Authorization": `Bearer ${localStorage.getItem('token')}`
       },
       body: JSON.stringify(bodyData),
     });
@@ -48,11 +48,12 @@ export const api = {
   },
 
   /**
-   * Petición para Actualizar datos (Equivalente a supabase.from('...').update())
+   * Petición para Actualizar datos
    */
   put: async <T>(endpoint: string, bodyData: any): Promise<T> => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: "PUT",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -67,11 +68,12 @@ export const api = {
   },
 
   /**
-   * Petición para Eliminar datos (Equivalente a supabase.from('...').delete())
+   * Petición para Eliminar datos
    */
   delete: async <T>(endpoint: string): Promise<T> => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: "DELETE",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -84,3 +86,4 @@ export const api = {
     return response.json();
   }
 };
+

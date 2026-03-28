@@ -20,7 +20,8 @@ from rrhh.views import (
     CookieTokenObtainPairView, 
     CookieTokenRefreshView,
     CookieLogoutView,
-    UserRegistrationView
+    UserRegistrationView,
+    UserMeView
 )
 
 urlpatterns = [
@@ -31,4 +32,5 @@ urlpatterns = [
     path('api/auth/login/', CookieTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/refresh/', CookieTokenRefreshView.as_view(), name='token_refresh'),
     path('api/auth/logout/', CookieLogoutView.as_view(), name='token_logout'),
+    path('api/auth/me/', UserMeView.as_view(), name='token_me'),
 ]
