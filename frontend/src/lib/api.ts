@@ -1,59 +1,94 @@
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
-const API_BASE_URL = BASE.endsWith("/api") ? BASE : `${BASE}/api`;
+import { tokenStorage } from './tokenStorage';
+
+const getApiUrl = () => {
+  const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  const envUrlStr = import.meta.env.VITE_API_URL;
+
+  if (envUrlStr) {
+    try {
+      const urlObj = new URL(envUrlStr);
+      if (urlObj.hostname === currentHostname) return envUrlStr;
+    } catch (e) {
+      // URL inválida, ignorar
+    }
+  }
+
+  return `http://${currentHostname}:8000/api`;
+};
+
+const BASE = getApiUrl();
+const API_BASE_URL = BASE.endsWith('/api') ? BASE : `${BASE}/api`;
 
 export const api = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
-  
-  // Incluimos las cookies/credenciales automáticamente para SimpleJWT
+
+  // Construir headers: siempre incluir Content-Type y credenciales para cookies
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string> || {}),
+  };
+
+  // Fallback: si hay token en storage (para entornos HTTP donde SameSite bloquea cookies),
+  // enviarlo como Authorization header. La cookie tiene prioridad si está presente.
+  const storedToken = tokenStorage.getAccess();
+  if (storedToken && !headers['Authorization']) {
+    headers['Authorization'] = `Bearer ${storedToken}`;
+  }
+
   const config: RequestInit = {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-    credentials: "include", // Importante para enviar HttpOnly cookies
+    headers,
+    credentials: 'include', // Siempre intentar enviar cookies también
   };
 
   try {
     let response = await fetch(url, config);
-    
+
     // Auto-Refresh Interceptor
-    // Si la ruta no es la del propio refresh/login y obtenemos 401, el access_token caducó.
     if (response.status === 401 && !endpoint.includes('/auth/refresh') && !endpoint.includes('/auth/login')) {
+      // El 401 en /auth/me es esperado si no hay sesión activa — no es un error real
+      const storedRefresh = tokenStorage.getRefresh();
+      const refreshBody = storedRefresh ? JSON.stringify({ refresh: storedRefresh }) : undefined;
+
       const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh/`, {
-        method: "POST",
-        credentials: "include" // Envía la cookie de refresh sola para conseguir uno nuevo
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: refreshBody,
       });
 
       if (refreshResponse.ok) {
-        // Todo salió bien, el backend inyectó una nueva cookie Access Token
-        // ¡Reintentemos la petición original!
-        response = await fetch(url, config);
+        const refreshData = await refreshResponse.json().catch(() => null);
+        // Si el backend devuelve un nuevo access token en el body, actualizarlo en storage
+        if (refreshData?.access) {
+          tokenStorage.updateAccess(refreshData.access);
+          // Reintentar con el nuevo token
+          headers['Authorization'] = `Bearer ${refreshData.access}`;
+        }
+        response = await fetch(url, { ...config, headers });
       } else {
-        // Si el refresh también falló (caducó el refresh_token o fue blacklistado), es hora de desloguear
+        tokenStorage.clear();
         window.dispatchEvent(new CustomEvent('auth:expired'));
       }
     }
 
     let data = null;
-    
-    // Solo intentamos parsear si hay contenido
     const textContent = await response.text();
     if (textContent) {
       try {
         data = JSON.parse(textContent);
       } catch (e) {
-        // Error de parseo si no era JSON puro
+        // No era JSON
       }
     }
 
     if (!response.ok) {
-      return { error: data || { message: "Error de servidor" }, status: response.status };
+      return { error: data || { message: 'Error de servidor' }, status: response.status };
     }
 
     return { data, status: response.status };
   } catch (error: any) {
-    console.error("API Call Error:", error);
-    return { error: { message: error.message || "No se pudo conectar con el servidor" }, status: 500 };
+    console.error('API Call Error:', error);
+    return { error: { message: error.message || 'No se pudo conectar con el servidor' }, status: 500 };
   }
 };

@@ -6,8 +6,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Index from "./pages/Index.tsx";
 import Register from "./pages/Register.tsx";
-import Dashboard from "./pages/Dashboard.tsx";
+import Dashboard, { DashboardContent } from "./pages/Dashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
+
+import Users from "./pages/Users.tsx";
+import Departments from "./pages/Departments.tsx";
+import JobRoles from "./pages/JobRoles.tsx";
 
 const queryClient = new QueryClient();
 
@@ -20,28 +24,37 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+import { SessionGuard } from "@/components/auth/SessionGuard";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/register" element={<Register />} />
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <SessionGuard>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/register" element={<Register />} />
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } 
+              >
+                <Route index element={<DashboardContent />} />
+                <Route path="users" element={<Users />} />
+                <Route path="departments" element={<Departments />} />
+                <Route path="job-roles" element={<JobRoles />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </SessionGuard>
     </AuthProvider>
   </QueryClientProvider>
 );

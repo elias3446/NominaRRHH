@@ -13,3 +13,5 @@ djangorestframework-simplejwt>=5.3.1
 django-cors-headers>=4.3.0
 # -- Tareas programadas (Limpieza de tokens) --
 celery>=5.3.6
+# -- Soporte para Imágenes (Avatares) --
+Pillow>=10.2.0

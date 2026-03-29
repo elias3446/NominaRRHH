@@ -17,6 +17,7 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter }
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { tokenStorage } from "@/lib/tokenStorage";
 import { Loader2, Mail, Lock } from "lucide-react";
 
 import { Checkbox } from "@/components/ui/checkbox";
@@ -51,6 +52,10 @@ export function LoginForm() {
     }
 
     if (data) {
+      // Guardar tokens en storage (fallback para HTTP cross-origin donde cookies fallan)
+      if (data.access && data.refresh) {
+        tokenStorage.setTokens(data.access, data.refresh, values.remember);
+      }
       toast.success("¡Bienvenido de nuevo!");
       login({ id: data.user_id || "1", email: values.email });
       navigate("/dashboard");

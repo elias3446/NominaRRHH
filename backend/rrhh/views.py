@@ -27,7 +27,8 @@ class CookieTokenObtainPairView(TokenObtainPairView):
                 max_age=access_max_age,
                 secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
                 httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-                samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE']
+                samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+                path='/'
             )
             
             # Colocar Refresh Token en Cookie
@@ -37,7 +38,8 @@ class CookieTokenObtainPairView(TokenObtainPairView):
                 max_age=refresh_max_age,
                 secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
                 httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-                samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE']
+                samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+                path='/'
             )
             
             # Actualizar last_sign_in_at y notificar WS
@@ -67,6 +69,21 @@ class CookieTokenObtainPairView(TokenObtainPairView):
                     )
                 except Exception as e:
                     print(f"Error actualizando last_login: {e}")
+            
+            # También devolver tokens en el body para entornos donde las cookies
+            # no son persistidas (HTTP cross-port en desarrollo)
+            try:
+                from rrhh.models import CustomUser
+                _user = CustomUser.objects.get(email=email) if email else None
+                _user_id = str(_user.id) if _user else None
+            except Exception:
+                _user_id = None
+            response.data = {
+                'user_id': _user_id,
+                'email': email,
+                'access': access_token,
+                'refresh': refresh_token,
+            }
                     
         return response
 
@@ -75,14 +92,29 @@ class CookieTokenRefreshView(TokenRefreshView):
     Renueva el Access Token usando el Refresh Token de la Cookie.
     """
     def post(self, request, *args, **kwargs):
-        # Extraer el refresh token de la cookie y pasarlo como data mutable
+        # 1. Obtener el refresh token desde la Cookie segura
         refresh_token_from_cookie = request.COOKIES.get(settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH'])
-        if refresh_token_from_cookie and 'refresh' not in request.data:
-            # request.data puede ser inmutable (QueryDict), creamos copia mutable
-            from rest_framework.request import Request
-            request._full_data = {'refresh': refresh_token_from_cookie}
+        
+        # 2. Si no hay token en la cookie ni en la data, devolvemos error (400)
+        # Si hay token en la cookie, lo inyectamos en el flujo del serializador
+        data = request.data.copy() if hasattr(request.data, 'copy') else {}
+        if refresh_token_from_cookie and 'refresh' not in data:
+            data['refresh'] = refresh_token_from_cookie
             
-        response = super().post(request, *args, **kwargs)
+        # 3. Validar con el serializador original de SimpleJWT
+        serializer = self.get_serializer(data=data)
+        
+        from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+        try:
+            serializer.is_valid(raise_exception=True)
+        except (TokenError, InvalidToken) as e:
+            # Si el refresh token ya no sirve (expiró o fue blacklistado) 
+            # devolvemos el error exacto para que el frontend limpie sesión.
+            return Response({"detail": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+        except Exception as e:
+             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+             
+        response = Response(serializer.validated_data, status=status.HTTP_200_OK)
 
         
         if response.status_code == 200:
@@ -95,7 +127,8 @@ class CookieTokenRefreshView(TokenRefreshView):
                 max_age=int(settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()),
                 secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
                 httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-                samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE']
+                samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+                path='/'
             )
             
             if refresh_token:
@@ -188,7 +221,8 @@ class UserRegistrationView(APIView):
                 max_age=int(settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds()),
                 secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
                 httponly=settings.SIMPLE_JWT['AUTH_COOKIE_HTTP_ONLY'],
-                samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE']
+                samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
+                path='/'
             )
             
             from django.utils import timezone

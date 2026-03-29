@@ -26,7 +26,9 @@ import {
   Search,
   TrendingUp,
   UserCheck,
-  Calendar
+  Calendar,
+  Building,
+  Briefcase
 } from "lucide-react";
 import { 
   LineChart, 
@@ -54,12 +56,13 @@ const data = [
 
 import { useWebSocket } from "@/hooks/useWebSocket";
 
-const DashboardContent = () => {
+export const DashboardContent = () => {
   const { user, logout } = useAuth();
   const [realTimeMsg, setRealTimeMsg] = useState("Sincronizando con el servidor...");
   
-  // Conexión real a WebSockets para notificaciones de usuario (Solo si hay usuario)
-  const { lastMessage, readyState } = useWebSocket(user ? `ws://localhost:8000/ws/users/` : null);
+  // Conexión real a WebSockets para notificaciones (dinámico para red local)
+  const wsHostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  const { lastMessage, readyState } = useWebSocket(user ? `ws://${wsHostname}:8000/ws/users/` : null);
 
   useEffect(() => {
     if (readyState === WebSocket.OPEN) {
@@ -221,8 +224,11 @@ const DashboardContent = () => {
   );
 };
 
+import { Outlet, Link, useLocation } from "react-router-dom";
+
 export default function Dashboard() {
   const { logout } = useAuth();
+  const location = useLocation();
   
   return (
     <SidebarProvider>
@@ -240,15 +246,35 @@ export default function Dashboard() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton isActive tooltip="Panel Principal">
-                      <LayoutDashboard className="h-4 w-4" />
-                      <span>Dashboard</span>
+                    <SidebarMenuButton asChild isActive={location.pathname === "/dashboard"} tooltip="Panel Principal">
+                      <Link to="/dashboard">
+                        <LayoutDashboard className="h-4 w-4" />
+                        <span>Dashboard</span>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <SidebarMenuButton tooltip="Gestión de Empleados">
-                      <Users className="h-4 w-4" />
-                      <span>Empleados</span>
+                    <SidebarMenuButton asChild isActive={location.pathname === "/dashboard/users"} tooltip="Gestión de Empleados">
+                      <Link to="/dashboard/users">
+                        <Users className="h-4 w-4" />
+                        <span>Empleados</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={location.pathname === "/dashboard/departments"} tooltip="Gestión de Departamentos">
+                      <Link to="/dashboard/departments">
+                        <Building className="h-4 w-4" />
+                        <span>Departamentos</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={location.pathname === "/dashboard/job-roles"} tooltip="Gestión de Cargos">
+                      <Link to="/dashboard/job-roles">
+                        <Briefcase className="h-4 w-4" />
+                        <span>Cargos</span>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -283,7 +309,7 @@ export default function Dashboard() {
           </SidebarContent>
         </Sidebar>
 
-        <DashboardContent />
+        <Outlet />
       </div>
     </SidebarProvider>
   );

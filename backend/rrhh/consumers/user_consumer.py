@@ -106,3 +106,12 @@ class UserConsumer(AsyncWebsocketConsumer):
             'message': event['message'],
             'user': event['user_data']
         }))
+
+    async def force_logout(self, event):
+        """Cierra la sesión del usuario inmediatamente ante borrado o baneo."""
+        await self.send(text_data=json.dumps({
+            'type': 'force_logout',
+            'message': event['message']
+        }))
+        # Cerramos el socket con código de política de violación o simplemente cerrar.
+        await self.close(code=4003) 

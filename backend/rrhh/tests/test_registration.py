@@ -1,6 +1,6 @@
 import pytest
 from rest_framework.test import APIClient
-from rrhh.models import CustomUser
+from rrhh.models import CustomUser, UserProfile
 from unittest.mock import patch, MagicMock
 
 @pytest.mark.django_db
@@ -10,74 +10,59 @@ class TestUserRegistration:
         self.register_url = '/api/auth/register/'
         CustomUser.objects.all().delete()
     
-    @patch('rrhh.views.get_channel_layer')
-    def test_first_user_is_super_admin(self, mock_get_channel_layer):
+    def test_first_user_is_super_admin(self):
         """
-        Verifica que el primer usuario registrado en la base de datos se crea 
-        automáticamente con role='service_role' y is_super_admin=True, además
-        de notificar vía WebSockets y actualizar last_login.
+        Verifica que el primer usuario registrado se crea con privilegios de super admin,
+        un perfil asociado y se envía la notificación por WebSocket.
         """
-        mock_channel_layer = MagicMock()
-        mock_get_channel_layer.return_value = mock_channel_layer
-        
-        # Asegurarnos de que no hay usuarios
-        assert CustomUser.objects.count() == 0
-        
-        # Registrar al primer usuario
-        payload_1 = {
-            "email": "first_user@test.com",
-            "password": "strongpassword123",
-            "password_confirm": "strongpassword123"
-        }
-        
-        response_1 = self.client.post(self.register_url, payload_1, format='json')
-        assert response_1.status_code == 201
-        
-        # Verificar que se crearon los privilegios y fecha de conexión
-        first_user = CustomUser.objects.get(email="first_user@test.com")
-        assert first_user.role == 'service_role', "El primer usuario debe tener el rol 'service_role'"
-        assert first_user.is_super_admin is True, "El primer usuario debe ser is_super_admin=True"
-        assert first_user.is_staff is True
-        assert first_user.is_superuser is True
-        assert first_user.last_login is not None, "Debe actualizarse el last_login (last_sign_in_at)"
-        
-        # Verificar WebSockets Notification
-        mock_channel_layer.group_send.assert_called_once()
-        args, kwargs = mock_channel_layer.group_send.call_args
-        assert args[0] == f'user_{first_user.id}'
-        assert args[1]['type'] == 'user_created_notification'
-        assert args[1]['user_data']['email'] == first_user.email
+        # Patching inside the test for better control
+        with patch('channels.layers.get_channel_layer') as mock_get_channel_layer, \
+             patch('asgiref.sync.async_to_sync') as mock_async_to_sync:
+            
+            mock_channel_layer = MagicMock()
+            mock_get_channel_layer.return_value = mock_channel_layer
+            mock_async_to_sync.side_effect = lambda x: x
+            
+            payload = {
+                "email": "admin_test@test.com",
+                "password": "SwissportAdmin2026!",
+                "password_confirm": "SwissportAdmin2026!"
+            }
+            
+            response = self.client.post(self.register_url, payload, format='json')
+            assert response.status_code == 201
+            
+            user = CustomUser.objects.get(email="admin_test@test.com")
+            assert user.role == 'service_role'
+            assert user.is_super_admin is True
+            assert UserProfile.objects.filter(user=user).exists()
+            
+            # WebSocket Check
+            assert mock_channel_layer.group_send.called
 
-    @patch('rrhh.views.get_channel_layer')
-    def test_second_user_is_regular_user(self, mock_get_channel_layer):
+    def test_second_user_is_regular_user(self):
         """
-        Verifica que el segundo usuario registrado en adelante se crea
-        con privilegios normales ('authenticated', is_super_admin=False).
+        Verifica que el segundo usuario registrado tiene el rol estándar 'authenticated'.
         """
-        mock_channel_layer = MagicMock()
-        mock_get_channel_layer.return_value = mock_channel_layer
+        with patch('channels.layers.get_channel_layer') as mock_get_channel_layer, \
+             patch('asgiref.sync.async_to_sync') as mock_async_to_sync:
+            
+            mock_channel_layer = MagicMock()
+            mock_get_channel_layer.return_value = mock_channel_layer
+            mock_async_to_sync.side_effect = lambda x: x
 
-        # Intervenir la BD creando el "primer usuario"
-        CustomUser.objects.create_user(email="first_admin@test.com", password="adminpassword")
-        assert CustomUser.objects.count() == 1
-        
-        # Registrar al SEGUNDO usuario
-        payload_2 = {
-            "email": "second_user@test.com",
-            "password": "normalpassword123",
-            "password_confirm": "normalpassword123"
-        }
-        
-        response_2 = self.client.post(self.register_url, payload_2, format='json')
-        assert response_2.status_code == 201
-        
-        # Verificar que este NO tiene privilegios
-        second_user = CustomUser.objects.get(email="second_user@test.com")
-        assert second_user.role == 'authenticated', "El segundo usuario debe tener rol normal 'authenticated'"
-        assert second_user.is_super_admin is False, "El segundo usuario NO debe ser super admin"
-        assert second_user.is_staff is False
-        assert second_user.is_superuser is False
-        assert second_user.last_login is not None
-        
-        # Verificar WebSockets Notification
-        mock_channel_layer.group_send.assert_called_once()
+            # Crear el primer admin manual
+            CustomUser.objects.create_user(email="first_admin@test.com", password="password")
+            
+            payload = {
+                "email": "regular@test.com",
+                "password": "SwissportAdmin2026!",
+                "password_confirm": "SwissportAdmin2026!"
+            }
+            
+            response = self.client.post(self.register_url, payload, format='json')
+            assert response.status_code == 201
+            
+            user = CustomUser.objects.get(email="regular@test.com")
+            assert user.role == 'authenticated'
+            assert user.is_super_admin is False

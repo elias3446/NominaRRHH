@@ -9,10 +9,13 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
-from pathlib import Path
 import os
 import sys
+from pathlib import Path
+from datetime import timedelta
+
+# Detección temprana de entorno de pruebas para modular arquitectura de base de datos
+IS_TESTING = 'test' in sys.argv or 'pytest' in sys.argv or 'pytest' in sys.modules
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -120,10 +123,19 @@ else:
             'HOST': os.environ.get('DB_HOST', 'db'),
             'PORT': os.environ.get('DB_PORT', '5432'), 
             'OPTIONS': {
-                'options': '-c search_path=auth,public'
+                'options': '-c search_path=django,rrhh,auth,public'
             },
         }
     }
+
+# --- CONFIGURACIÓN DE MULTI-ESQUEMA ---
+# Estos routers aseguran que Django use 'django' para sus tablas internas,
+# 'auth' para la autenticación de SimpleJWT y 'public' para tu lógica de rrhh.
+DATABASE_ROUTERS = [
+    'core.db_routers.DjangoSchemaRouter',
+    'core.db_routers.AuthSchemaRouter',
+]
+
 
 # Configuración Maestra de Caché apuntando al nuevo servicio Redis
 CACHES = {
@@ -199,7 +211,9 @@ SIMPLE_JWT = {
     'AUTH_COOKIE_SECURE': not DEBUG,    # Solo se envía por HTTPS en producción
     'AUTH_COOKIE_HTTP_ONLY': True,      # Protege contra XSS (JS no puede leer el token)
     'AUTH_COOKIE_PATH': '/',            # Disponible en todo el sitio
-    'AUTH_COOKIE_SAMESITE': 'Lax',       # Protege contra CSRF (Cross-Site Request Forgery)
+    # SameSite=None necesario cuando frontend y backend están en puertos distintos (cross-origin)
+    # En producción (HTTPS) esto es seguro. En dev (HTTP) el browser puede bloquearlo.
+    'AUTH_COOKIE_SAMESITE': 'None' if not DEBUG else 'Lax',
     
     # Validación de Integridad
     'ISSUER': os.getenv('JWT_ISSUER', 'NominaRRHH-Backend'),
@@ -232,8 +246,8 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
 # --- CONFIGURACIÓN CORS ---
-# Solo permite que tu frontend oficial consuma la API
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+# Nota: NO usar CORS_ALLOW_ALL_ORIGINS=True si se usan Cookies (CORS_ALLOW_CREDENTIALS)
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')]
 
 # ESENCIAL: Permite que el navegador envíe Cookies (Tokens) en peticiones Cross-Origin
 CORS_ALLOW_CREDENTIALS = True
@@ -254,4 +268,16 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour=3, minute=0),
     },
 }
-
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}

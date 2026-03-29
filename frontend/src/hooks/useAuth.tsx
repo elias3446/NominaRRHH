@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '@/lib/api';
+import { tokenStorage } from '@/lib/tokenStorage';
 
 interface User {
   id: string;
@@ -40,7 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Evento de caducidad global emitido por el interceptor del api.ts
     const handleAuthExpired = () => {
       setUser(null);
-      // Opcionalmente redirigir o mostrar toast
+      tokenStorage.clear();
     };
 
     window.addEventListener('auth:expired', handleAuthExpired);
@@ -58,8 +59,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.error("Error logging out", e);
     } finally {
+      tokenStorage.clear();
       setUser(null);
-      window.location.href = "/"; // Redirigir al login
+      window.location.href = "/";
     }
   };
 
